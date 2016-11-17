@@ -15,7 +15,7 @@ struct sfp_header
 	uint64_t nameTableOffset;
 	uint64_t dataOffset;
 	uint64_t archiveSize;
-	uint64_t firstNameOffset;
+	uint64_t packageLabelOffset;
 	uint64_t unk3;
 };
 
@@ -101,8 +101,8 @@ int main(int argc, char** argv)
 	fread(&header, sizeof(header), 1, f);
 
 	// read name table
-	std::vector<char> nameTable(header.dataOffset - header.firstNameOffset);
-	_fseeki64(f, header.firstNameOffset, SEEK_SET);
+	std::vector<char> nameTable(header.dataOffset - header.nameTableOffset);
+	_fseeki64(f, header.nameTableOffset, SEEK_SET);
 
 	fread(&nameTable[0], 1, nameTable.size(), f);
 
@@ -120,7 +120,7 @@ int main(int argc, char** argv)
 			return "";
 		}
 
-		return &nameTable[nameOffset - header.firstNameOffset];
+		return &nameTable[nameOffset - header.nameTableOffset];
 	});
 
 	fclose(f);
