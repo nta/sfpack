@@ -1,11 +1,29 @@
+#define _FILE_OFFSET_BITS 64
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
-#include <direct.h>
-#include <sys/utime.h>
 
+#include <string>
 #include <functional>
 #include <vector>
+
+#if _WIN32
+#include <direct.h>
+#include <sys/utime.h>
+#define  mkdir(d)       _mkdir(d)
+#define  fseek(f, o, m) _fseeki64(f, o, m)
+#define  utime(f, t)    _utime64(f, t)
+#define  PACKED
+typedef __utimbuf64 utimbuf;
+#else
+#include <utime.h>
+#include <sys/stat.h>
+#define  fseek(f, o, m) fseeko(f, o, m)
+#define  mkdir(d)       mkdir(d, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)
+#define  PACKED         __attribute__((packed))
+typedef struct utimbuf utimbuf;
+#endif
+
 
 struct sfp_header
 {
@@ -35,12 +53,13 @@ struct sfp_dir
 	uint64_t unk3;
 	uint64_t startOffset;
 	uint32_t dataLength;
-};
+} PACKED;
 #pragma pack(pop)
+
 
 void ReadDirectory(const std::string& dirPath, FILE* f, uint64_t dirOffset, const std::function<const char*(uint64_t)>& getName)
 {
-	_fseeki64(f, dirOffset, SEEK_SET);
+	fseek(f, dirOffset, SEEK_SET);
 
 	sfp_dir dir;
 	fread(&dir, 1, sizeof(dir), f);
@@ -50,7 +69,7 @@ void ReadDirectory(const std::string& dirPath, FILE* f, uint64_t dirOffset, cons
 
 	if (dir.isDir)
 	{
-		_mkdir(fn.c_str());
+		mkdir(fn.c_str());
 
 		for (uint64_t offset = dir.startOffset; offset < (dir.startOffset + dir.dataLength); offset += sizeof(sfp_dir))
 		{
@@ -64,7 +83,7 @@ void ReadDirectory(const std::string& dirPath, FILE* f, uint64_t dirOffset, cons
 
 		if (of)
 		{
-			_fseeki64(f, dir.startOffset, SEEK_SET);
+			fseek(f, dir.startOffset, SEEK_SET);
 
 			for (uint64_t readBytes = 0; readBytes < dir.dataLength; readBytes += sizeof(buffer))
 			{
@@ -82,12 +101,13 @@ void ReadDirectory(const std::string& dirPath, FILE* f, uint64_t dirOffset, cons
 			fclose(of);
 		}
 
+
 		// set times
-		__utimbuf64 ut;
+		utimbuf ut;
 		ut.actime = dir.createdTime;
 		ut.modtime = dir.createdTime;
 
-		_utime64(fn.c_str(), &ut);
+		utime(fn.c_str(), &ut);
 	}
 }
 
@@ -113,7 +133,7 @@ int main(int argc, char** argv)
 
 	// read name table
 	std::vector<char> nameTable(header.dataOffset - header.nameTableOffset);
-	_fseeki64(f, header.nameTableOffset, SEEK_SET);
+	fseek(f, header.nameTableOffset, SEEK_SET);
 
 	fread(&nameTable[0], 1, nameTable.size(), f);
 
@@ -121,7 +141,7 @@ int main(int argc, char** argv)
 	std::string outRoot = fname;
 	outRoot = outRoot.substr(0, outRoot.length() - 4);
 
-	_mkdir(outRoot.c_str());
+	mkdir(outRoot.c_str());
 
 	// read directories
 	ReadDirectory(outRoot, f, header.firstDirOffset, [&] (uint64_t nameOffset) -> const char*
