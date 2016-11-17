@@ -14,7 +14,7 @@
 #define  fseek(f, o, m) _fseeki64(f, o, m)
 #define  utime(f, t)    _utime64(f, t)
 #define  PACKED
-typedef __utimbuf64 utimbuf;
+#define  utimbuf __utimbuf64
 #else
 #include <utime.h>
 #include <sys/stat.h>
