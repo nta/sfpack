@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <direct.h>
+#include <sys/utime.h>
 
 #include <functional>
 #include <vector>
@@ -61,22 +62,32 @@ void ReadDirectory(const std::string& dirPath, FILE* f, uint64_t dirOffset, cons
 		char buffer[2048];
 		FILE* of = fopen(fn.c_str(), "wb");
 
-		_fseeki64(f, dir.startOffset, SEEK_SET);
-
-		for (uint64_t readBytes = 0; readBytes < dir.dataLength; readBytes += sizeof(buffer))
+		if (of)
 		{
-			uint32_t thisRead = sizeof(buffer);
+			_fseeki64(f, dir.startOffset, SEEK_SET);
 
-			if ((dir.dataLength - readBytes) < thisRead)
+			for (uint64_t readBytes = 0; readBytes < dir.dataLength; readBytes += sizeof(buffer))
 			{
-				thisRead = dir.dataLength - readBytes;
+				uint32_t thisRead = sizeof(buffer);
+
+				if ((dir.dataLength - readBytes) < thisRead)
+				{
+					thisRead = dir.dataLength - readBytes;
+				}
+
+				fread(buffer, 1, thisRead, f);
+				fwrite(buffer, 1, thisRead, of);
 			}
 
-			fread(buffer, 1, thisRead, f);
-			fwrite(buffer, 1, thisRead, of);
+			fclose(of);
 		}
 
-		fclose(of);
+		// set times
+		__utimbuf64 ut;
+		ut.actime = dir.createdTime;
+		ut.modtime = dir.createdTime;
+
+		_utime64(fn.c_str(), &ut);
 	}
 }
 
