@@ -10,6 +10,11 @@ sfpack Y:\dls\system.common.sfp
 
 have fun.
 
+# Building
+
+Just run `make`, this requires `g++` (provided by `build-essential` on Ubuntu).
+You can install `build-essential` with `sudo apt-get install build-essential`.
+
 ## licensing-ish
 
 ```
