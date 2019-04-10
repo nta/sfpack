@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>  
+  
+  <ItemGroup Condition="'$(BuildingInsideVisualStudio)' != 'true' AND ('$(RuntimeIdentifier)' == 'win-x64' OR '$(RuntimeIdentifier)' ==  'linux-x64')">
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="1.0.0-alpha-*" />
+  </ItemGroup>
+  
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+	 <TrimUnusedDependencies>true</TrimUnusedDependencies>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true' AND ('$(RuntimeIdentifier)' == 'win-x64' OR '$(RuntimeIdentifier)' ==  'linux-x64') AND '$(Configuration)' == 'Release'">
+	 <!-- Disables Exception.ToString() -->
+	 <IlcDisableReflection>true</IlcDisableReflection>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true' AND ('$(RuntimeIdentifier)' == 'win-x64' OR '$(RuntimeIdentifier)' ==  'linux-x64')">
+	<RootAllApplicationAssemblies>false</RootAllApplicationAssemblies>
+	<IlcGenerateCompleteTypeMetadata>false</IlcGenerateCompleteTypeMetadata>
+	<IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
+	<IlcOptimizationPreference>Speed</IlcOptimizationPreference>
+	<IlcOptimizationPreference>Size</IlcOptimizationPreference>
+	<IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
+  </PropertyGroup>
+</Project>
